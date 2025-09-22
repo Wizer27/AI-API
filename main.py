@@ -54,3 +54,11 @@ async def register(request:Login):
     else:
         raise HTTPException(status_code=400,detail="User alredy exists")
     
+
+class GetResponse(BaseModel):
+    resp:str
+
+@app.post("/AI/answer")
+
+async def answer(request:GetResponse):
+    pass

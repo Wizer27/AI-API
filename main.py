@@ -9,6 +9,8 @@ import random
 from pydantic.types import StrictStr
 from pydantic_core.core_schema import str_schema
 import uuid
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 app = FastAPI()
 

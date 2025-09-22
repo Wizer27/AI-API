@@ -38,5 +38,19 @@ async def register(request:Login):
         data[request.username] = request.passw
         with open("users.json","w") as file:
             json.dump(data,file)
+        ### default messages
+        try:
+            with open("messages.json","r") as file:
+                mes = json.load(file)
+            mes.append({
+                "username":request.username,
+                "messages":[]
+            }) 
+            with open("messages.json","w") as file:
+                json.dump(mes,file)  
+        except Exception as e:
+            raise HTTPException(status_code=400,detail= f"Exception: {e}")         
+        
     else:
         raise HTTPException(status_code=400,detail="User alredy exists")
+    

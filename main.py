@@ -31,5 +31,12 @@ async def login(request:Login) -> bool:
         return data[request.username] == request.passw
     raise HTTPException(status_code=404,detail="User not found")
     
-
-    
+async def register(request:Login):
+    with open("users.json","r") as file:
+        data = json.load(file)
+    if request.username not in data:
+        data[request.username] = request.passw
+        with open("users.json","w") as file:
+            json.dump(data,file)
+    else:
+        raise HTTPException(status_code=400,detail="User alredy exists")

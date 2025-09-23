@@ -125,7 +125,8 @@ async def send(request:AddNewMessage):
                     found = True
                     chat["messages"].append({
                         "role":request.role,
-                        "message":request.message
+                        "message":request.message,
+                        "id":request.id_message
                     })
     if found:
         with open("chats.json","w") as file:
@@ -133,3 +134,21 @@ async def send(request:AddNewMessage):
     else:
         raise HTTPException(status_code=400,detail="User not found")                        
 
+class DeleteMessage(BaseModel):
+    username:str
+    id_chat:str
+    id_message:str
+    role:str
+@app.post("/delete/message")
+async def delete_message(request:DeleteMessage):
+    with open("chats.json","r") as file:
+        chats = json.load(file)
+    found = True    
+    for user in chats:
+        if user["username"] == request.username:
+            for chat in user["chats"]:
+                if chat["id"] == request.id_chat:
+                    for message in chat:
+                        if message["id"] == request.id_message:
+                            pass
+                        

@@ -143,12 +143,22 @@ class DeleteMessage(BaseModel):
 async def delete_message(request:DeleteMessage):
     with open("chats.json","r") as file:
         chats = json.load(file)
-    found = True    
+    found = False  
     for user in chats:
         if user["username"] == request.username:
             for chat in user["chats"]:
                 if chat["id"] == request.id_chat:
                     for message in chat:
                         if message["id"] == request.id_message:
-                            pass
-                        
+                            try:
+                                index = chat.index(message)
+                                chat.pop(index)
+                                found = True
+                                break
+                            except Exception as e:
+                                raise HTTPException(status_code=400,detail=f"Something went wrong, error: {e}")    
+    if found:
+        with open("chats.json","w") as file:
+            json.dump(chats,file)
+    else:
+        raise HTTPException(status_code=400,detail="Error while wring the data")                            

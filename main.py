@@ -11,6 +11,7 @@ from pydantic_core.core_schema import str_schema
 import uuid
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from olama import Client
 
 app = FastAPI()
 
@@ -58,9 +59,30 @@ async def register(request:Login):
     
 
 class GetResponse(BaseModel):
-    resp:str
+    search:str
+    username:str
 
+
+AI = Client()
 @app.post("/AI/answer")
-
 async def answer(request:GetResponse):
-    pass
+    with open("request.json","r") as file:
+        data = json.load(file)
+    done = False   
+    repsonse = AI.generate(request.search)
+    try:    
+        for user in data:
+            if user["username"] == request.username:
+                user["requests"].append(
+                    {
+                        "user_question":request.search,
+                        "ai_response":repsonse
+                    }
+                )
+                done = True
+        if done:        
+            with open("requests.json","w") as file:
+                json.dump(data,file)   
+            return repsonse         
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail=f"Exception while try: {e}")             

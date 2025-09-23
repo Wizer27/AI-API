@@ -87,7 +87,7 @@ async def answer(request:GetResponse):
     except Exception as e:
         raise HTTPException(status_code = 400,detail=f"Exception while try: {e}")   
 
-class CreateNewChat:
+class CreateNewChat(BaseModel):
     username:str
     id:str = Field(default_factory=lambda: str(uuid.uuid4()))
 @app.post("/create/new/chat") 
@@ -104,4 +104,9 @@ async def create_new_chat(request:CreateNewChat):
             done = True
     if done:
         with open("chats.json","w") as file:
-            json.dump(data,file)                        
+            json.dump(data,file) 
+
+class AddNewMessage(BaseModel):
+    role:str
+    message:str
+    id:str

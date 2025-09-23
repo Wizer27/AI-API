@@ -98,7 +98,7 @@ async def create_new_chat(request:CreateNewChat):
     for user in data:
         if user["username"] == request.username:
             user["chats"].append({
-                "messages" : {},
+                "messages" : [],
                 "id":request.id
             })   
             done = True
@@ -110,3 +110,25 @@ class AddNewMessage(BaseModel):
     role:str
     message:str
     id:str
+    username:str
+
+@app.post("/send/message")
+async def send(request:AddNewMessage):
+    with open("chats.json","r") as file:
+        chats = json.load(file)
+    found = False    
+    for user in chats:
+        if user["username"] == request.username:
+            for chat in user["chats"]:
+                if chat["id"] == request.id:
+                    found = True
+                    chat["messages"].append({
+                        "role":request.role,
+                        "message":request.message
+                    })
+    if found:
+        with open("chats.json","w") as file:
+            json.dump(chats,file)
+    else:
+        raise HTTPException(status_code=400,detail="User not found")                        
+

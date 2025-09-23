@@ -43,13 +43,13 @@ async def register(request:Login):
             json.dump(data,file)
         ### default messages
         try:
-            with open("messages.json","r") as file:
+            with open("chats.json","r") as file:
                 mes = json.load(file)
             mes.append({
                 "username":request.username,
-                "messages":[]
+                "chats":[]
             }) 
-            with open("messages.json","w") as file:
+            with open("chats.json","w") as file:
                 json.dump(mes,file)  
         except Exception as e:
             raise HTTPException(status_code=400,detail= f"Exception: {e}")         
@@ -61,7 +61,7 @@ async def register(request:Login):
 class GetResponse(BaseModel):
     search:str
     username:str
-
+    chat_id:str
 
 AI = Client()
 @app.post("/AI/answer")
@@ -85,4 +85,23 @@ async def answer(request:GetResponse):
                 json.dump(data,file)   
             return repsonse         
     except Exception as e:
-        raise HTTPException(status_code = 400,detail=f"Exception while try: {e}")             
+        raise HTTPException(status_code = 400,detail=f"Exception while try: {e}")   
+
+class CreateNewChat:
+    username:str
+    id:str = Field(default_factory=lambda: str(uuid.uuid4()))
+@app.post("/create/new/chat") 
+async def create_new_chat(request:CreateNewChat):
+    with open("chats.json","r") as file:
+        data = json.load(file)
+    done = False    
+    for user in data:
+        if user["username"] == request.username:
+            user["chats"].append({
+                "messages" : {},
+                "id":request.id
+            })   
+            done = True
+    if done:
+        with open("chats.json","w") as file:
+            json.dump(data,file)                        

@@ -111,6 +111,7 @@ class AddNewMessage(BaseModel):
     message:str
     id:str
     username:str
+    id_message:str = Field(default_factory=lambda: str(uuid.uuid4()))
 
 @app.post("/send/message")
 async def send(request:AddNewMessage):

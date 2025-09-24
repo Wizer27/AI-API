@@ -12,6 +12,7 @@ import uuid
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from olama import Client
+import redis
 
 app = FastAPI()
 
@@ -181,3 +182,17 @@ async def delete_message(request:DeleteMessage):
             json.dump(chats,file)
     else:
         raise HTTPException(status_code=400,detail="Error while wring the data")                            
+
+async def redis_init_user(username:str) -> bool:
+    redis = redis.Redis("localhost",8888,0,decode_response = True)
+
+    if not redis.exists(f"user:{username}"):
+        new_user = {
+            "chats":json.dumps([])
+        }
+        redis.hset(f"user:{username}", mapping=new_user)
+        return True
+    print("User alredy in database")
+    return False
+
+

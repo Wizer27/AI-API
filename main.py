@@ -106,6 +106,25 @@ async def create_new_chat(request:CreateNewChat):
         with open("chats.json","w") as file:
             json.dump(data,file) 
 
+class Delete_Chat(BaseModel):
+    username:str
+    id:str            
+@app.post("/delete/chat")
+async def delete_chat(request:Delete_Chat):
+    with open("chats.json","r") as file:
+        data = json.load(file)
+    for user in data:
+        if user["username"] == request.username:
+            for chat in user["chats"]:
+                if chat["id"] == request.id:
+                    ind = user["chats"].index(chat)
+                    user["chats"].pop(ind)
+                    with open("chats.json","w") as file:
+                        json.dump(data,file)
+                        return
+    raise HTTPException(status_code=400,detail="User not found")                
+
+
 class AddNewMessage(BaseModel):
     role:str
     message:str

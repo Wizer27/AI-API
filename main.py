@@ -182,6 +182,7 @@ async def delete_message(request:DeleteMessage):
             json.dump(chats,file)
     else:
         raise HTTPException(status_code=400,detail="Error while wring the data")                            
+#FIXME write the logic to change the message
 
 async def redis_init_user(username:str) -> bool:
     redis = redis.Redis("localhost",8888,0,decode_response = True)
@@ -196,3 +197,28 @@ async def redis_init_user(username:str) -> bool:
     return False
 
 
+class ChangePromt(BaseModel):
+    username:str
+    message_id:str
+    chat_id:str
+    new_message:str
+@app.post("/user/change/message")
+async def change_message(request:ChangePromt):
+    try:
+        with open("chats.json","r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == request.username:
+                for chat in user["chats"]:
+                    if chat["id"] == request.chat_id:
+                        for message in chat["messages"]:
+                            if message["id"] == request.message_id:
+                                if message["role"] == request.username:
+                                    message["message"] = request.new_message
+                                    with open("chats.json","w") as file:
+                                        json.dump(data,file)
+                                    return True
+        return False                        
+    except Exception as e:
+        raise HTTPException(status_code=400,detail=f"Error : {e}")                            
+                               

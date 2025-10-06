@@ -196,7 +196,6 @@ async def redis_init_user(username:str) -> bool:
     print("User alredy in database")
     return False
 
-
 class ChangePromt(BaseModel):
     username:str
     message_id:str

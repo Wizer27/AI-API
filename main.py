@@ -47,11 +47,15 @@ async def main():
 
 
 class Login(BaseModel):
+    signature:str
+    timestamp:float = Field(default_factory = time.time)
     username:str
     passw:str
 
 @app.post("/login")
 async def login(request:Login) -> bool:
+    if not verify_signature(request.model_dump(),request.signature):
+        raise HTTPException(status_code = 400,detail = "Invalid signature")
     with open("users.json","r") as file:
         data = json.load(file)
 

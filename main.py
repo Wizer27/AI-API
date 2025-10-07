@@ -13,6 +13,30 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from olama import Client
 import redis
+import uvicorn
+import time
+import hmac
+import uuid
+import hashlib
+
+
+
+def get_key():
+    with open("secrets.json","r") as file:
+        data = json.load(file)
+    return data["key"]    
+
+def verify_signature(data:dict,rec_signature) -> bool:
+    if time.time() - data.get('timestamp',0) > 300:
+        return False
+    KEY = "test"
+    data_to_verify = data.copy()
+    data_to_verify.pop("signature",None)
+    data_str = json.dumps(data_to_verify,sort_keys = True,separators = (',',':'))
+    expected = hmac.new(KEY.encode(),data_str.encode(),hashlib.sha256).hexdigest()
+    return hmac.compare_digest(rec_signature,expected)
+
+
 
 app = FastAPI()
 
@@ -219,5 +243,7 @@ async def change_message(request:ChangePromt):
                                     return True
         return False                        
     except Exception as e:
-        raise HTTPException(status_code=400,detail=f"Error : {e}")                            
+        raise HTTPException(status_code=400,detail=f"Error : {e}")       
+if __name__ == "__main__":
+    uvicorn.run(app,host = "0.0.0.0",port = 8080)
                                

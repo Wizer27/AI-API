@@ -210,7 +210,7 @@ async def delete_message(request:DeleteMessage):
             json.dump(chats,file)
     else:
         raise HTTPException(status_code=400,detail="Error while wring the data")                            
-#FIXME write the logic to change the message
+
 
 async def redis_init_user(username:str) -> bool:
     redis = redis.Redis("localhost",8888,0,decode_response = True)
@@ -245,9 +245,11 @@ async def change_message(request:ChangePromt):
                                     with open("chats.json","w") as file:
                                         json.dump(data,file)
                                     return True
-        return False                        
+        return False    
+                        
     except Exception as e:
         raise HTTPException(status_code=400,detail=f"Error : {e}")       
+  
 if __name__ == "__main__":
     uvicorn.run(app,host = "0.0.0.0",port = 8080)
                                

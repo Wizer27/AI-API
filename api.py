@@ -11,6 +11,7 @@ from pydantic import BaseModel,Field
 
 secrets_file = "data/secrets.json"
 users_file = "data/users.json"
+chats_file = "data/chats.json"
 
 def get_secrets_keys(argument:str) -> str:
     try:
@@ -20,6 +21,7 @@ def get_secrets_keys(argument:str) -> str:
     except Exception as e:
         raise KeyError(f"Error : {e}")
     
+ 
 
 
 def verify_signature(data:dict,rec_signature) -> bool:
@@ -39,6 +41,19 @@ def try_except_decorator(func):
             raise Exception(e)    
     return check    
 
+@try_except_decorator
+def write_default_chats(username:str):
+    try:
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        data.append({
+            "username":username,
+            "chats":[]
+        })    
+        with open(chats_file,"w") as file:
+            json.dump(data,file)
+    except Exception as e:
+        raise KeyError(f"Error : {e}")
 
 @try_except_decorator
 def is_user_exists(username:str) -> bool:
@@ -84,6 +99,8 @@ async def register(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:s
             data[req.username] = req.hash_psw
             with open(users_file,"w") as file:
                 json.dump(data,file)
+            #default data
+            write_default_chats(req.username)    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = e) 
 @app.post("/logn")

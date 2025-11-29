@@ -86,3 +86,15 @@ async def register(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:s
                 json.dump(data,file)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = e) 
+@app.post("/logn")
+async def login(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        if not is_user_exists(req.username):
+            raise HTTPException(status_code = 404,detail = "User not found")
+        with open(users_file,"r") as file:
+            data = json.load(file)
+        return data[req.username] == req.hash_psw    
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")    

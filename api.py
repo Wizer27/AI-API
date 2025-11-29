@@ -5,6 +5,7 @@ import hashlib
 import json
 import requests
 import time
+import uuid
 from secrets import compare_digest
 from pydantic import BaseModel,Field
 
@@ -103,7 +104,7 @@ async def register(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:s
             write_default_chats(req.username)    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = e) 
-@app.post("/logn")
+@app.post("/login")
 async def login(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
@@ -115,3 +116,23 @@ async def login(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str 
         return data[req.username] == req.hash_psw    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")    
+class CreateNewChat(BaseModel):
+    username:str
+
+@app.post("/create/new/chat")
+async def create_new_chat(req:CreateNewChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == req.username:
+                user["chats"].append({
+                    "id":str(uuid.uuid4()),
+                    "messages":[]
+                })    
+                with open(chats_file,"w") as file:
+                    json.dump(data,file)
+    except Exception as e:
+        raise HTTPException(status_code = 400 ,detail = f"Error : {e}")

@@ -9,6 +9,10 @@ import uuid
 from secrets import compare_digest
 from pydantic import BaseModel,Field
 from typing import Optional,List
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 
 secrets_file = "data/secrets.json"
@@ -148,6 +152,28 @@ async def create_new_chat(req:CreateNewChat,x_signature:str = Header(...),x_time
                     json.dump(data,file)
     except Exception as e:
         raise HTTPException(status_code = 400 ,detail = f"Error : {e}")
+class DeleteChat(BaseModel):
+    username:str
+    chat_id:str
+@app.post("/delete/chat")
+async def delete_chat(req:DeleteChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature") 
+    if not is_user_exists(req.username):
+        raise HTTPException(status_code = 404,detail = "User not found")
+    try:
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == req.username:
+                for chat in user["chats"]:
+                    if chat["id"]  == req.chat_id:
+                        ind = user["chats"].index(chat)
+                        user["chats"].pop(ind)
+                        with open(chats_file,"w") as file:
+                            json.dump(data,file)       
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")       
 
 @app.get("/get/{username}/chats",dependencies=[Depends(safe_get)])
 async def get_user_chats(username:str):
@@ -186,7 +212,8 @@ async def send_message(req:SendMessage,x_signature:str = Header(...),x_timestamp
                         chat["messages"].append({
                             "role":req.role,
                             "message":req.message,
-                            "files":req.files if req.files != None else []
+                            "files":req.files if req.files != None else [],
+                            "id":str(uuid.uuid4())
                         })    
                         with open(chats_file,"w") as file:
                             json.dump(data,file)  

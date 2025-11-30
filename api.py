@@ -8,6 +8,7 @@ import time
 import uuid
 from secrets import compare_digest
 from pydantic import BaseModel,Field
+from typing import Optional,List
 
 
 secrets_file = "data/secrets.json"
@@ -158,5 +159,36 @@ async def get_user_chats(username:str):
         for user in chats:
             if user["username"] == username:
                 return user["chats"]        
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
+class SendMessage(BaseModel):
+    username:str
+    chat_id:str
+    message:str
+    files:Optional[List[str]]
+    role:str
+@app.post("/send/message")    
+async def send_message(req:SendMessage,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        if req.role != "ai" and req.role != "user":
+            raise HTTPException(status_code = 400,detail = "Invalid role")
+        if not is_user_exists(req.username):
+            raise HTTPException(status_code = 404,detail = "User not found")
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == req.username:
+                for chat in user["chats"]:
+                    if chat["id"] == req.chat_id:
+                        chat["messages"].append({
+                            "role":req.role,
+                            "message":req.message,
+                            "files":req.files if req.files != None else []
+                        })    
+                        with open(chats_file,"w") as file:
+                            json.dump(data,file)  
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")

@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Request,Depends,HTTPException,Header
+from fastapi import FastAPI,Request,Depends,HTTPException,Header,status
 import uvicorn
 import hmac
 import hashlib
@@ -231,5 +231,12 @@ async def get_chat_messages(req:GetChatMessages,x_signature:str = Header(...),x_
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     if not is_user_exists(req.username):
         raise HTTPException(status_code = 404,detail = "User not found")
+    try:
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            pass    
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
     
 

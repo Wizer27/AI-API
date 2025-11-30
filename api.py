@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Reuqets,Depends,HTTPException,Header
+from fastapi import FastAPI,Request,Depends,HTTPException,Header
 import uvicorn
 import hmac
 import hashlib
@@ -22,6 +22,7 @@ def get_secrets_keys(argument:str) -> str:
     except Exception as e:
         raise KeyError(f"Error : {e}")
     
+    
  
 
 
@@ -34,6 +35,16 @@ def verify_signature(data:dict,rec_signature) -> bool:
     data_str = json.dumps(data_to_verify,sort_keys = True,separators = (',',':'))
     expected = hmac.new(KEY.encode(),data_str.encode(),hashlib.sha256).hexdigest()
     return hmac.compare_digest(rec_signature,expected)
+async def safe_get(req:Request):
+    try:
+        api = req.headers.get("X-API-KEY")
+        if not api or hmac.compare_digest(api,get_secrets_keys("api")):
+            raise HTTPException(status_code = 401,detail = "Invalid API key")
+    except Exception as e:
+        raise HTTPException(status_code = 401,detail = "Invalid api key")
+
+
+
 def try_except_decorator(func):
     def check(*args,**kwargs):
         try:
@@ -136,3 +147,16 @@ async def create_new_chat(req:CreateNewChat,x_signature:str = Header(...),x_time
                     json.dump(data,file)
     except Exception as e:
         raise HTTPException(status_code = 400 ,detail = f"Error : {e}")
+
+@app.get("/get/{username}/chats",dependencies=[Depends(safe_get)])
+async def get_user_chats(username:str):
+    try:
+        if not is_user_exists(username):
+            raise HTTPException(status_code = 404,detail = "User nt found")
+        with open(chats_file,"r") as file:
+            chats = json.load(file)
+        for user in chats:
+            if user["username"] == username:
+                return user["chats"]        
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")

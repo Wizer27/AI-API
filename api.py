@@ -198,6 +198,8 @@ class SendMessage(BaseModel):
 async def send_message(req:SendMessage,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
+    if not is_user_exists(req.username):
+        raise HTTPException(status_code = 404,detail = "User not found")
     try:
         if req.role != "ai" and req.role != "user":
             raise HTTPException(status_code = 400,detail = "Invalid role")
@@ -219,3 +221,13 @@ async def send_message(req:SendMessage,x_signature:str = Header(...),x_timestamp
                             json.dump(data,file)  
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
+class GetChatMessages(BaseModel):
+    username:str
+    chat_id:str
+@app.post("/get/chat/messages")
+async def get_chat_messages(req:GetChatMessages,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    
+

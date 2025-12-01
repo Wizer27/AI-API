@@ -9,3 +9,7 @@ def conect():
     #postgresql://[user[:password]@]host[:port]/database[?parameters]
     
     return f"postgresql+psycopg://{os.getenv("DB_USER")}:{os.getenv("DB_PASSWORD")}@localhost:5432/ai_data" 
+
+
+def connect_login_data():
+     return f"postgresql+asyncpg://{os.getenv("DB_USER")}:{os.getenv("DB_PASSWORD")}@localhost:5432/login_data" 

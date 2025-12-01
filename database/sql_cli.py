@@ -12,6 +12,6 @@ engine = create_engine(
 )
 
 with engine.connect() as conn:
-    res = conn.execute("SELECT VERSION()")
-    print(f"{res=}")
+    res = conn.execute(text("SELECT VERSION()"))
+    print(res.fetchall())
 

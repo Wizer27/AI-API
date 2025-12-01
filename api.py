@@ -249,7 +249,10 @@ async def get_chat_messages(request:Request,req:GetChatMessages,x_signature:str 
         with open(chats_file,"r") as file:
             data = json.load(file)
         for user in data:
-            pass    
+            if user["username"] == req.username:
+                for chat in user["chats"]:
+                    if chat["id"] == req.chat_id:
+                        return chat["messages"]  
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
     

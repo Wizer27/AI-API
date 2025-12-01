@@ -1,6 +1,7 @@
 from sqlalchemy import text,select
 from sql_cli import sync_engine
 from models import metadata_obj,users_table
+from security.hash_psw import hash_password
 
 
 def create_tables():
@@ -16,7 +17,18 @@ def is_user_exists(username:str) -> bool:
 
 
 
-def register_new_user(username:str,hash_psw:str):
+def register_new_user(username:str,hash_psw:str) -> bool:
+    if is_user_exists(username):
+        return False
     with sync_engine.connect() as conn:
-        stmt = "INSERT"
-print(is_user_exists(""))        
+        try:
+            stmt = users_table.insert().values(
+                username = username,
+                hash_psw = hash_psw
+            )
+            conn.execute(stmt)
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error : {e}")
+      

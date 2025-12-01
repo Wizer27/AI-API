@@ -15,6 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 
+
 secrets_file = "data/secrets.json"
 users_file = "data/users.json"
 chats_file = "data/chats.json"
@@ -95,16 +96,23 @@ def is_user_exists(username:str) -> bool:
     except Exception as e:
         raise Exception(e)
 
+limiter = Limiter(key_func = get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 @app.get("/")
-async def main():
+@limiter.limit("900/minute")
+async def main(request:Request):
     return "AI API"
 
 class RegisterLogin(BaseModel):
     username:str
     hash_psw:str
 @app.post("/register")
-async def register(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+@limiter.limit("900/minute")
+async def register(request:Request,req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
@@ -121,7 +129,8 @@ async def register(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:s
     except Exception as e:
         raise HTTPException(status_code = 400,detail = e) 
 @app.post("/login")
-async def login(req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+@limiter.limit("900/minute")
+async def login(request:Request,req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
@@ -136,7 +145,8 @@ class CreateNewChat(BaseModel):
     username:str
 
 @app.post("/create/new/chat")
-async def create_new_chat(req:CreateNewChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+@limiter.limit("900/minute")
+async def create_new_chat(request:Request,req:CreateNewChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
@@ -156,7 +166,8 @@ class DeleteChat(BaseModel):
     username:str
     chat_id:str
 @app.post("/delete/chat")
-async def delete_chat(req:DeleteChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+@limiter.limit("900/minute")
+async def delete_chat(request:Request,req:DeleteChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature") 
     if not is_user_exists(req.username):
@@ -176,7 +187,8 @@ async def delete_chat(req:DeleteChat,x_signature:str = Header(...),x_timestamp:s
         raise HTTPException(status_code = 400,detail = f"Error : {e}")       
 
 @app.get("/get/{username}/chats",dependencies=[Depends(safe_get)])
-async def get_user_chats(username:str):
+@limiter.limit("900/minute")
+async def get_user_chats(request:Request,username:str):
     try:
         if not is_user_exists(username):
             raise HTTPException(status_code = 404,detail = "User nt found")
@@ -195,7 +207,8 @@ class SendMessage(BaseModel):
     files:Optional[List[str]]
     role:str
 @app.post("/send/message")    
-async def send_message(req:SendMessage,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+@limiter.limit("900/minute")
+async def send_message(request:Request,req:SendMessage,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     if not is_user_exists(req.username):
@@ -226,7 +239,8 @@ class GetChatMessages(BaseModel):
     username:str
     chat_id:str
 @app.post("/get/chat/messages")
-async def get_chat_messages(req:GetChatMessages,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+@limiter.limit("900/minute")
+async def get_chat_messages(request:Request,req:GetChatMessages,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     if not is_user_exists(req.username):
@@ -239,4 +253,5 @@ async def get_chat_messages(req:GetChatMessages,x_signature:str = Header(...),x_
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
     
-
+if __name__ == "__main__":
+    uvicorn.run(app,host = "0.0.0.0",port = 8080)

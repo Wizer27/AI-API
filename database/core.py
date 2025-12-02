@@ -3,6 +3,7 @@ from sql_cli import sync_engine
 from models import metadata_obj,users_table
 from security.hash_psw import hash_password
 import uuid
+from typing import Optional,List
 
 
 def create_tables():
@@ -68,6 +69,7 @@ def add_chat_to_user(username:str,chat_data:dict) -> bool:
 def get_user_chats(username:str):
     if not is_user_exists(username):
         print("User not found")
+        raise KeyError("User not found")       
     with sync_engine.connect() as conn:
         try:
             stmt = select(users_table.c.chats).where(users_table.c.username == username)
@@ -76,6 +78,47 @@ def get_user_chats(username:str):
         except Exception as e:
             print(f"Error : {e}")
             raise Exception(f"Error : {e}")    
+def send_message(username:str,chat_id:str,role:str,message:str,files:Optional[List[str]]):
+    if not is_user_exists(username):
+        print(f"User not found")
+        raise KeyError("User not found") 
+    ind = False
+    with sync_engine.connect() as conn:
+        try:
+            user_chats = get_user_chats()
+            for chat in user_chats:
+                if chat["id"] == chat_id:
+                    chat["messages"].append({
+                        "role":role,
+                        "message":message,
+                        "id":str(uuid.uuid4),
+                        "files":files if files is not None else [] 
+                    })
+                    ind = True
+            if ind:
+                update_stmt = users_table.update().where(users_table.c.username == username).values(chats = user_chats)
+                conn.execute(update_stmt)
+                conn.commit()
+        except Exception as e:
+            raise Exception(f"Error : {e}") 
+
+def delete_chat(username:str,chat_id:str):
+    if not is_user_exists(username):
+        print("User not found")
+        raise KeyError("User not found")
+    try:
+       with sync_engine.connect() as conn:
+            users_chats = get_user_chats()
+            for chat in users_chats:
+               if chat["id"] == chat_id:
+                   ind = users_chats.index(chat)
+                   users_chats.pop(ind)
+            update_stmt = users_table.update().where(users_table.c.username == username).values(chats = users_chats)
+            conn.execute(update_stmt)
+            conn.commit()
+    except Exception as e:
+        print(f"Error : {e}")
+        raise Exception(f"Error : {e}")           
 
 
 def debug():
@@ -83,7 +126,6 @@ def debug():
     print("-----------")
     print(login("us","1")) 
 
-print(get_user_chats("us"))
 
 
      

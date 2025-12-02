@@ -1,7 +1,7 @@
 from sqlalchemy import text,select
-from sql_cli import sync_engine
-from models import metadata_obj,users_table
-from security.hash_psw import hash_password
+from database.sql_cli import sync_engine
+from database.models import metadata_obj,users_table
+from database.security.hash_psw import hash_password
 import uuid
 from typing import Optional,List
 

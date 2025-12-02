@@ -65,17 +65,25 @@ def add_chat_to_user(username:str,chat_data:dict) -> bool:
             print(f"Error : {e}")
             return False
 
+def get_user_chats(username:str):
+    if not is_user_exists(username):
+        print("User not found")
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(users_table.c.chats).where(users_table.c.username == username)
+            cur_chats = conn.scalar(stmt)
+            return cur_chats
+        except Exception as e:
+            print(f"Error : {e}")
+            raise Exception(f"Error : {e}")    
+
 
 def debug():
     print(register_new_user("us","1"))
     print("-----------")
     print(login("us","1")) 
-print(add_chat_to_user(
-    username = "us",
-    chat_data={
-        "id":str(uuid.uuid4()),
-        "messages":[]
-    }
-))
+
+print(get_user_chats("us"))
+
 
      

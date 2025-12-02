@@ -1,88 +1,80 @@
-from typing import Optional
+# ollama_api.py - используй встроенный API
 import requests
 import json
 
-
-class Client:
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        self.base_url = base_url
-        self._check_connection()
-    
-    def _check_connection(self):
-        """Проверяет подключение к Ollama"""
-        try:
-            response = requests.get(f"{self.base_url}/api/tags", timeout=10)
-            if response.status_code == 200:
-                print("✅ Подключение к Ollama установлено")
-            else:
-                print("❌ Ollama не отвечает")
-        except Exception as e:
-            print(f"❌ Ошибка подключения: {e}")
-            print("Убедись что Ollama запущен: ollama serve")
-    
-    def list_models(self) -> list:
-        """Список установленных моделей"""
-        try:
-            response = requests.get(f"{self.base_url}/api/tags")
-            return response.json().get("models", [])
-        except:
-            return []
-    
-    def pull_model(self, model_name: str):
-        """Скачивает модель"""
-        print(f"📥 Скачиваю модель {model_name}...")
-        response = requests.post(
-            f"{self.base_url}/api/pull",
-            json={"name": model_name},
-            stream=True
-        )
+class OllamaAPI:
+    def __init__(self, host="localhost", port=11434):
+        self.base_url = f"http://{host}:{port}"
         
-        for line in response.iter_lines():
-            if line:
-                data = json.loads(line)
-                if "status" in data:
-                    print(f"Статус: {data['status']}")
-    
-    def generate(self, 
-                prompt: str, 
-                model: str = "llama2",
-                max_tokens: int = 1000,
-                temperature: float = 0.7) -> str:
-        """Генерация текста"""
-        payload = {
+    def generate(self, prompt, model="qwen2.5:7b", temperature=0.7):
+        """Генерация текста через API"""
+        url = f"{self.base_url}/api/generate"
+        
+        data = {
             "model": model,
             "prompt": prompt,
             "stream": False,
             "options": {
-                "num_predict": max_tokens,
-                "temperature": temperature
+                "temperature": temperature,
+                "num_predict": 2000
             }
         }
         
         try:
-            response = requests.post(
-                f"{self.base_url}/api/generate",
-                json=payload,
-                timeout=120
-            )
-            result = response.json()
-            return result.get("response", "Ошибка генерации")
+            response = requests.post(url, json=data, timeout=60)
+            if response.status_code == 200:
+                result = response.json()
+                return result['response']
+            else:
+                return f"Ошибка API: {response.status_code}"
         except Exception as e:
-            return f"Ошибка: {e}"
-
-    def chat(self, messages: list, model: str = "llama2") -> str:
-        """Чат-режим (более продвинутый)"""
-        payload = {
+            return f"Ошибка подключения: {e}"
+    
+    def chat(self, messages, model="qwen2.5:7b"):
+        """Chat completion через API (более новый метод)"""
+        url = f"{self.base_url}/api/chat"
+        
+        data = {
             "model": model,
             "messages": messages,
-            "stream": False
+            "stream": False,
+            "options": {
+                "temperature": 0.7
+            }
         }
         
-        response = requests.post(
-            f"{self.base_url}/api/chat",
-            json=payload,
-            timeout=120
-        )
-        return response.json()["message"]["content"]
-main = Client()
-print(main.generate("Привет как у тебя дела?"))    
+        try:
+            response = requests.post(url, json=data, timeout=60)
+            if response.status_code == 200:
+                result = response.json()
+                return result['message']['content']
+            else:
+                return f"Ошибка API: {response.status_code}"
+        except Exception as e:
+            return f"Ошибка подключения: {e}"
+
+# Использование
+if __name__ == "__main__":
+    # Убедись, что Ollama сервер запущен:
+    # ollama serve
+    
+    ollama = OllamaAPI()
+    
+    # Простой запрос
+    print("🤖 Тест 1: Простой запрос")
+    response = ollama.generate("Привет! Как дела?")
+    print(f"Ответ: {response}")
+    
+    print("\n" + "="*50 + "\n")
+    
+    # Chat completion
+    print("🤖 Тест 2: Chat completion")
+    messages = [
+        {"role": "system", "content": "Ты полезный ассистент."},
+        {"role": "user", "content": "Привет!"},
+        {"role": "assistant", "content": "Привет! Чем могу помочь?"},
+        {"role": "user", "content": "Расскажи о Python"}
+    ]
+    
+    response = ollama.chat(messages)
+    print(f"Ответ: {response[:200]}...")

@@ -6,6 +6,8 @@ import json
 import requests
 import time
 import uuid
+import os
+from dotenv import load_dotenv
 from secrets import compare_digest
 from pydantic import BaseModel,Field
 from typing import Optional,List
@@ -196,6 +198,12 @@ async def get_chat_messages_api(request:Request,req:GetChatMessages,x_signature:
         return get_chat_messages(req.username,req.chat_id)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+    
+
+
+load_dotenv()
+   
+
     
 if __name__ == "__main__":
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

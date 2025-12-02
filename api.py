@@ -13,6 +13,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from database.core import register_new_user,login,create_chat,get_user_chats,send_message,delete_chat,get_chat_messages
 
 
 
@@ -116,29 +117,20 @@ async def register(request:Request,req:RegisterLogin,x_signature:str = Header(..
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
-        if is_user_exists(req.username):
-            raise HTTPException(status_code = 400,detail = "Username is already taken")
-        else:
-            with open(users_file,"r") as file:
-                data = json.load(file)
-            data[req.username] = req.hash_psw
-            with open(users_file,"w") as file:
-                json.dump(data,file)
-            #default data
-            write_default_chats(req.username)    
+        res = register_new_user(req.username,req.hash_psw)
+        if res:
+            create_chat(req.username)
+        return res    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = e) 
 @app.post("/login")
 @limiter.limit("900/minute")
-async def login(request:Request,req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+async def login_api(request:Request,req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
-        if not is_user_exists(req.username):
-            raise HTTPException(status_code = 404,detail = "User not found")
-        with open(users_file,"r") as file:
-            data = json.load(file)
-        return data[req.username] == req.hash_psw    
+        res = login(req.username,req.hash_psw)
+        return res
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")    
 class CreateNewChat(BaseModel):
@@ -150,16 +142,7 @@ async def create_new_chat(request:Request,req:CreateNewChat,x_signature:str = He
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
-        with open(chats_file,"r") as file:
-            data = json.load(file)
-        for user in data:
-            if user["username"] == req.username:
-                user["chats"].append({
-                    "id":str(uuid.uuid4()),
-                    "messages":[]
-                })    
-                with open(chats_file,"w") as file:
-                    json.dump(data,file)
+        create_chat(req.username)
     except Exception as e:
         raise HTTPException(status_code = 400 ,detail = f"Error : {e}")
 class DeleteChat(BaseModel):
@@ -167,36 +150,19 @@ class DeleteChat(BaseModel):
     chat_id:str
 @app.post("/delete/chat")
 @limiter.limit("900/minute")
-async def delete_chat(request:Request,req:DeleteChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+async def delete_chat_api(request:Request,req:DeleteChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature") 
-    if not is_user_exists(req.username):
-        raise HTTPException(status_code = 404,detail = "User not found")
     try:
-        with open(chats_file,"r") as file:
-            data = json.load(file)
-        for user in data:
-            if user["username"] == req.username:
-                for chat in user["chats"]:
-                    if chat["id"]  == req.chat_id:
-                        ind = user["chats"].index(chat)
-                        user["chats"].pop(ind)
-                        with open(chats_file,"w") as file:
-                            json.dump(data,file)       
+       res = delete_chat(req.username,req.chat_id)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")       
 
 @app.get("/get/{username}/chats",dependencies=[Depends(safe_get)])
 @limiter.limit("900/minute")
-async def get_user_chats(request:Request,username:str):
+async def get_user_chats_api(request:Request,username:str):
     try:
-        if not is_user_exists(username):
-            raise HTTPException(status_code = 404,detail = "User nt found")
-        with open(chats_file,"r") as file:
-            chats = json.load(file)
-        for user in chats:
-            if user["username"] == username:
-                return user["chats"]        
+        return get_user_chats(username)    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
@@ -208,30 +174,13 @@ class SendMessage(BaseModel):
     role:str
 @app.post("/send/message")    
 @limiter.limit("900/minute")
-async def send_message(request:Request,req:SendMessage,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+async def send_message_api(request:Request,req:SendMessage,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
-    if not is_user_exists(req.username):
-        raise HTTPException(status_code = 404,detail = "User not found")
     try:
         if req.role != "ai" and req.role != "user":
             raise HTTPException(status_code = 400,detail = "Invalid role")
-        if not is_user_exists(req.username):
-            raise HTTPException(status_code = 404,detail = "User not found")
-        with open(chats_file,"r") as file:
-            data = json.load(file)
-        for user in data:
-            if user["username"] == req.username:
-                for chat in user["chats"]:
-                    if chat["id"] == req.chat_id:
-                        chat["messages"].append({
-                            "role":req.role,
-                            "message":req.message,
-                            "files":req.files if req.files != None else [],
-                            "id":str(uuid.uuid4())
-                        })    
-                        with open(chats_file,"w") as file:
-                            json.dump(data,file)  
+        send_message(req.username,req.chat_id,req.role,req.message,req.files)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
@@ -240,19 +189,11 @@ class GetChatMessages(BaseModel):
     chat_id:str
 @app.post("/get/chat/messages")
 @limiter.limit("900/minute")
-async def get_chat_messages(request:Request,req:GetChatMessages,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+async def get_chat_messages_api(request:Request,req:GetChatMessages,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
-    if not is_user_exists(req.username):
-        raise HTTPException(status_code = 404,detail = "User not found")
     try:
-        with open(chats_file,"r") as file:
-            data = json.load(file)
-        for user in data:
-            if user["username"] == req.username:
-                for chat in user["chats"]:
-                    if chat["id"] == req.chat_id:
-                        return chat["messages"]  
+        return get_chat_messages(req.username,req.chat_id)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
     

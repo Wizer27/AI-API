@@ -32,6 +32,7 @@ def register_new_user(username:str,hash_psw:str) -> bool:
             return True
         except Exception as e:
             print(f"Error : {e}")
+            return False
 def login(username:str,psw:str) -> bool:
     if not is_user_exists(username):
         return False
@@ -48,9 +49,13 @@ def login(username:str,psw:str) -> bool:
             print(f"Error : {e}")
             return False  
 
-def add_chat_to_user(username:str,chat_data:dict) -> bool:
+def create_chat(username:str) -> bool:
     if not is_user_exists(username):
         return False
+    chat_data = {
+        "id":str(uuid.uuid4),
+        "messages":[]
+    }
     with sync_engine.connect() as conn:
         try:
             stmt = select(users_table.c.chats).where(users_table.c.username == username)
@@ -119,6 +124,20 @@ def delete_chat(username:str,chat_id:str):
     except Exception as e:
         print(f"Error : {e}")
         raise Exception(f"Error : {e}")           
+
+def get_chat_messages(username:str,chat_id:str) -> List:
+    if not is_user_exists(username):
+        raise KeyError("User not found")
+    with sync_engine.connect() as conn:
+        try:
+            chats = get_user_chats()
+            for chat in chats:
+                if chat["id"] == chat_id:
+                    return chat["messages"]
+            return []    
+        except Exception as e:
+            raise Exception(f"Error : {e}")
+    
 
 
 def debug():

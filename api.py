@@ -16,7 +16,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from database.core import register_new_user,login,create_chat,get_user_chats,send_message,delete_chat,get_chat_messages
-
+from olama import OllamaAPI
 
 
 secrets_file = "data/secrets.json"
@@ -173,7 +173,6 @@ class SendMessage(BaseModel):
     chat_id:str
     message:str
     files:Optional[List[str]]
-    role:str
 @app.post("/send/message")    
 @limiter.limit("900/minute")
 async def send_message_api(request:Request,req:SendMessage,x_signature:str = Header(...),x_timestamp:str = Header(...)):
@@ -182,7 +181,16 @@ async def send_message_api(request:Request,req:SendMessage,x_signature:str = Hea
     try:
         if req.role != "ai" and req.role != "user":
             raise HTTPException(status_code = 400,detail = "Invalid role")
-        send_message(req.username,req.chat_id,req.role,req.message,req.files)
+        send_message(req.username,req.chat_id,"user",req.message,req.files)
+        if req.role == "user":
+            olama = OllamaAPI()
+            message = [
+                {"role": "system", "content": "Ты умный юрист с  25 летним опытом"},
+                {"role": "user", "content": req.message}
+            ]
+            resp = olama.chat(message)
+            send_message(req.username,req.chat_id,"ai",resp)
+
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
@@ -198,8 +206,8 @@ async def get_chat_messages_api(request:Request,req:GetChatMessages,x_signature:
         return get_chat_messages(req.username,req.chat_id)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+ 
     
-
 
 load_dotenv()
    

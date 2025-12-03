@@ -23,7 +23,7 @@ def register_new_user(username:str,hash_psw:str) -> bool:
         return False
     with sync_engine.connect() as conn:
         try:
-            stmt = users_table.insert(). values(
+            stmt = users_table.insert().values(
                 username = username,
                 hash_psw = hash_password(hash_psw)
             )

@@ -190,6 +190,7 @@ async def send_message_api(request:Request,req:SendMessage,x_signature:str = Hea
             ]
             resp = olama.chat(message)
             send_message(req.username,req.chat_id,"ai",resp)
+            return resp
 
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")

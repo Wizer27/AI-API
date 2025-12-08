@@ -122,7 +122,7 @@ async def register(request:Request,req:RegisterLogin,x_signature:str = Header(..
         res = register_new_user(req.username,req.hash_psw)
         if res:
             create_chat(req.username)
-        return res    
+        raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "User already exists")    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = e) 
 @app.post("/login")
@@ -132,7 +132,9 @@ async def login_api(request:Request,req:RegisterLogin,x_signature:str = Header(.
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         res = login(req.username,req.hash_psw)
-        return res
+        if res:
+            return res
+        raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "Login Error")    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")    
 class CreateNewChat(BaseModel):

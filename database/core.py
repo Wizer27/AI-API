@@ -25,7 +25,7 @@ def register_new_user(username:str,hash_psw:str) -> bool:
         try:
             stmt = users_table.insert().values(
                 username = username,
-                hash_psw = hash_password(hash_psw)
+                hash_psw = hash_psw
             )
             conn.execute(stmt)
             conn.commit()

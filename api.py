@@ -209,7 +209,18 @@ async def get_chat_messages_api(request:Request,req:GetChatMessages,x_signature:
     except Exception as e:
         print(f"Error : {e}")
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
- 
+
+class GetAllUserMessages(BaseModel):
+    username:str
+@app.post("/all/messages")
+@limiter.limit("900/minute")
+async def get_all_messages(request:Request,req:GetAllUserMessages,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        pass
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
     
 
 load_dotenv()

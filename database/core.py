@@ -116,7 +116,7 @@ def delete_chat(username:str,chat_id:str):
         raise KeyError("User not found")
     try:
        with sync_engine.connect() as conn:
-            users_chats = get_user_chats()
+            users_chats = get_user_chats(username)
             for chat in users_chats:
                if chat["id"] == chat_id:
                    ind = users_chats.index(chat)
@@ -141,7 +141,18 @@ def get_chat_messages(username:str,chat_id:str) -> List:
         except Exception as e:
             raise Exception(f"Error : {e}")
     
-
+def get_user_all_messages(username:str) -> Optional[List[str]]:
+    if not is_user_exists(username):
+        return []
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(users_table.c.chats).where(users_table.c.username == username)
+            res = conn.execute(stmt)
+            data = res.fetchall()
+            return data
+        except Exception as e:
+            print(f"Error : {e}")
+            return []
 
 def debug():
     print(register_new_user("us1","2"))

@@ -35,8 +35,8 @@ def get_secrets_keys(argument:str) -> str:
  
 
 
-def verify_signature(data:dict,rec_signature) -> bool:
-    if time.time() - data.get('timestamp',0) > 300:
+def verify_signature(data:dict,rec_signature,x_timestamp:str) -> bool:
+    if time.time() - int(x_timestamp) > 300:
         return False
     KEY = get_secrets_keys("signature")
     data_to_verify = data.copy()
@@ -124,7 +124,8 @@ async def register(request:Request,req:RegisterLogin,x_signature:str = Header(..
             create_chat(req.username)
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "User already exists")    
     except Exception as e:
-        raise HTTPException(status_code = 400,detail = e) 
+        print(f"Error : {e}")
+        raise HTTPException(status_code = 400,detail = f"Error : {e}") 
 @app.post("/login")
 @limiter.limit("900/minute")
 async def login_api(request:Request,req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
@@ -136,6 +137,7 @@ async def login_api(request:Request,req:RegisterLogin,x_signature:str = Header(.
             return res
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "Login Error")    
     except Exception as e:
+        print(f"Error : {e}")
         raise HTTPException(status_code = 400,detail = f"Error : {e}")    
 class CreateNewChat(BaseModel):
     username:str

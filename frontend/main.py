@@ -6,7 +6,7 @@ import hmac
 import time
 import json
 
-API_URL = "http:0.0.0.0:8080"
+API_URL = "http://0.0.0.0:8080"
 json_path_secrets = "/Users/ivan/AI-API/data/secrets.json"
 
 def get_siganture() -> str:
@@ -115,3 +115,4 @@ if not st.session_state.logged_in:
             st.rerun()
     
     st.stop()
+st.success("DONE")   

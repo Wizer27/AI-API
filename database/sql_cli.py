@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import create_async_engine,async_sessionmaker,AsyncSession
 from sqlalchemy.orm import Session,sessionmaker
 from sqlalchemy import URL,create_engine,text
-from database.config import conect,connect_login_data
+from config import conect,connect_login_data
 import asyncio
-from database.models import metadata_obj
+from models import metadata_obj
 
 
 sync_engine =  create_engine(

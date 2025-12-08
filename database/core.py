@@ -1,7 +1,7 @@
 from sqlalchemy import text,select
-from database.sql_cli import sync_engine
-from database.models import metadata_obj,users_table
-from database.security.hash_psw import hash_password
+from sql_cli import sync_engine
+from models import metadata_obj,users_table
+from security.hash_psw import hash_password
 import uuid
 from typing import Optional,List
 
@@ -9,12 +9,20 @@ from typing import Optional,List
 def create_tables():
     metadata_obj.create_all(sync_engine)
 
-def is_user_exists(username:str) -> bool:
+def is_user_exists(username:str):
     with sync_engine.connect() as conn:
-        stmt = select(text("COUNT(1)")).where(users_table.c.username == username)
-        res = conn.execute(stmt)
-        count = res.scalar()
-        return count > 0 if count else False
+        try:
+            stmt = select(users_table)
+            res = conn.execute(stmt)
+            data = res.fetchall()
+            for user in data:
+                if user[0] == username:
+                    return True
+            return False    
+               
+        except Exception as e:
+            print(f"Error : {e}")
+            raise Exception(f"Error : {e}")
 
 
 
@@ -141,10 +149,10 @@ def get_chat_messages(username:str,chat_id:str) -> List:
 
 
 def debug():
-    print(register_new_user("us","1"))
+    print(register_new_user("us1","2"))
     print("-----------")
     print(login("us","1")) 
 
-
+print(is_user_exists("s"))
 
      

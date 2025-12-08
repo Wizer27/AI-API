@@ -31,10 +31,7 @@ def hash_password(psw:str) -> str:
     byt = psw.encode("utf-8")
     return str(hashlib.sha256(byt).hexdigest())
 
-def register_user(username, password):
-    if 'users' not in st.session_state:
-        st.session_state.users = {}
-    st.session_state.users[username] = password
+
 
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -72,3 +69,49 @@ def login(username:str,psw:str):
     print(f"Json : {res.json()}")
     print(f"Text : {res.text}")
     return res.status_code == 200
+
+if not st.session_state.logged_in:
+    st.set_page_config(layout="wide")
+
+    
+    if st.session_state.show_register:
+        st.title("📝 Registration")
+        new_username = st.text_input("Username", key="reg_user")
+        new_password = st.text_input("Password", type="password", key="reg_pass1")
+        confirm_password = st.text_input("Retype the password", type="password", key="reg_pass2")
+        
+        if st.button("Create an account"):
+            if not new_username or not new_password:
+                st.error("Fill all the field.")
+            elif new_password != confirm_password:
+                st.error("Passwords do not match.")       
+            else:    
+                api_answer = register_api(new_username, hash_password(new_password)) 
+                if not api_answer:
+                    st.error("This username is already taken.")
+                else:    
+                    st.success("Successfully created an account. Now you can sign in.")
+                    st.session_state.show_register = False
+                            
+        if st.button("← Back to sign in"):
+            st.session_state.show_register = False
+            st.rerun()
+    
+    else:
+        st.title("🔒 Sign in ")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        
+        if st.button("Sign in"):
+            if login(username, hash_password(password)):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.rerun()
+            else:
+                st.error("Wrong password or username")
+                
+        if st.button("Sign up"):
+            st.session_state.show_register = True
+            st.rerun()
+    
+    st.stop()

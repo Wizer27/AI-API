@@ -47,7 +47,7 @@ def verify_signature(data:dict,rec_signature,x_timestamp:str) -> bool:
 async def safe_get(req:Request):
     try:
         api = req.headers.get("X-API-KEY")
-        if not api or hmac.compare_digest(api,get_secrets_keys("api")):
+        if not api or not hmac.compare_digest(api,get_secrets_keys("api")):
             raise HTTPException(status_code = 401,detail = "Invalid API key")
     except Exception as e:
         raise HTTPException(status_code = 401,detail = "Invalid api key")

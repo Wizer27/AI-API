@@ -19,7 +19,9 @@ def get_siganture() -> str:
 
 def get_api_key() -> str:
     try:
-        pass
+        with open(json_path_secrets,"r") as file:
+            data = json.load(file)
+        return data["api"]    
     except KeyError:
         raise KeyError("Key not found")    
 
@@ -57,9 +59,6 @@ def register_api(username:str,psw:str) -> bool:
         "X-Timestamp":str(int(time.time()))
     }
     res  = requests.post(f"{API_URL}/register",json = data,headers = headers)
-    print(f"Status code : {res.status_code}")
-    print(f"Json : {res.json()}")
-    print(f"Text : {res.text}")
     return res.status_code == 200
 def login(username:str,psw:str) -> bool:
     data = {
@@ -71,9 +70,6 @@ def login(username:str,psw:str) -> bool:
         "X-Timestamp":str(int(time.time()))
     }
     res  = requests.post(f"{API_URL}/login",json = data,headers = headers)
-    print(f"Status code : {res.status_code}")
-    print(f"Json : {res.json()}")
-    print(f"Text : {res.text}")
     return res.status_code == 200
 
 if not st.session_state.logged_in:
@@ -130,6 +126,6 @@ def get_user_chats(username:str):
     if res.status_code == 200:
         return res.json()
 with st.sidebar:
-    pass
+   pass
 
 

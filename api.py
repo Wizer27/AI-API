@@ -120,9 +120,8 @@ async def register(request:Request,req:RegisterLogin,x_signature:str = Header(..
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         res = register_new_user(req.username,req.hash_psw)
-        if res:
-            create_chat(req.username)
-        raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "User already exists")    
+        if not res:    
+            raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "User already exists")    
     except Exception as e:
         print(f"Error : {e}")
         raise HTTPException(status_code = 400,detail = f"Error : {e}") 
@@ -130,12 +129,13 @@ async def register(request:Request,req:RegisterLogin,x_signature:str = Header(..
 @limiter.limit("900/minute")
 async def login_api(request:Request,req:RegisterLogin,x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
-        raise HTTPException(status_code = 401,detail = "Invalid signature")
+        raise HTTPException(status_code = 403,detail = "Invalid signature")
     try:
         res = login(req.username,req.hash_psw)
         if res:
             return res
-        raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "Login Error")    
+        else:
+            raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "Login Error")    
     except Exception as e:
         print(f"Error : {e}")
         raise HTTPException(status_code = 400,detail = f"Error : {e}")    

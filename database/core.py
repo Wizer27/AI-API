@@ -1,7 +1,7 @@
 from sqlalchemy import text,select
-from sql_cli import sync_engine
-from models import metadata_obj,users_table
-from security.hash_psw import hash_password
+from database.sql_cli import sync_engine
+from database.models import metadata_obj,users_table
+from database.security.hash_psw import hash_password
 import uuid
 from typing import Optional,List
 
@@ -12,14 +12,9 @@ def create_tables():
 def is_user_exists(username:str):
     with sync_engine.connect() as conn:
         try:
-            stmt = select(users_table)
+            stmt = select(users_table.c.username).where(users_table.c.username == username)
             res = conn.execute(stmt)
-            data = res.fetchall()
-            for user in data:
-                if user[0] == username:
-                    return True
-            return False    
-               
+            return len(res.fetchall()) != 0
         except Exception as e:
             print(f"Error : {e}")
             raise Exception(f"Error : {e}")
@@ -52,7 +47,7 @@ def login(username:str,psw:str) -> bool:
             if not user_data:
                 print("DATA NOT FOUND")
                 return False
-            return user_data[0] == hash_password(psw)    
+            return user_data[0] == psw 
         except Exception as e:
             print(f"Error : {e}")
             return False  
@@ -153,6 +148,6 @@ def debug():
     print("-----------")
     print(login("us","1")) 
 
-print(is_user_exists("s"))
+
 
      

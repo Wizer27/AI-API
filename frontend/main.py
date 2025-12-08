@@ -17,6 +17,12 @@ def get_siganture() -> str:
     except KeyError:
         raise KeyError("Key not Found")
 
+def get_api_key() -> str:
+    try:
+        pass
+    except KeyError:
+        raise KeyError("Key not found")    
+
 
 def generate_siganture(data:dict) -> str:
     KEY = get_siganture()
@@ -55,10 +61,10 @@ def register_api(username:str,psw:str) -> bool:
     print(f"Json : {res.json()}")
     print(f"Text : {res.text}")
     return res.status_code == 200
-def login(username:str,psw:str):
+def login(username:str,psw:str) -> bool:
     data = {
        "username":username,
-       "hash_psw":hash_password(psw)
+       "hash_psw":psw
     }
     headers = {
         "X-Signature":generate_siganture(data),
@@ -86,7 +92,7 @@ if not st.session_state.logged_in:
             elif new_password != confirm_password:
                 st.error("Passwords do not match.")       
             else:    
-                api_answer = register_api(new_username, hash_password(new_password)) 
+                api_answer = register_api(new_username, new_password)
                 if not api_answer:
                     st.error("This username is already taken.")
                 else:    
@@ -115,4 +121,15 @@ if not st.session_state.logged_in:
             st.rerun()
     
     st.stop()
-st.success("DONE")   
+
+def get_user_chats(username:str):
+    headers = {
+        "X-API-KEY":get_api_key()
+    }
+    res = requests.get(f"{API_URL}/get/{username}/chats",headers=headers)
+    if res.status_code == 200:
+        return res.json()
+with st.sidebar:
+    pass
+
+

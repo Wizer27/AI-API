@@ -183,18 +183,15 @@ async def send_message_api(request:Request,req:SendMessage,x_signature:str = Hea
     if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
-        if req.role != "ai" and req.role != "user":
-            raise HTTPException(status_code = 400,detail = "Invalid role")
         send_message(req.username,req.chat_id,"user",req.message,req.files)
-        if req.role == "user":
-            olama = OllamaAPI()
-            message = [
-                {"role": "system", "content": "Ты умный юрист с  25 летним опытом"},
-                {"role": "user", "content": req.message}
-            ]
-            resp = olama.chat(message)
-            send_message(req.username,req.chat_id,"ai",resp)
-            return resp
+        olama = OllamaAPI()
+        message = [
+            {"role": "system", "content": "Ты умный юрист с  25 летним опытом и разговариваешь с пользователем на том языке на котором он с тобой говорит"},
+            {"role": "user", "content": req.message}
+        ]
+        resp = olama.chat(message)
+        send_message(req.username,req.chat_id,"assistant",resp,[])
+        return resp
 
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
@@ -210,6 +207,7 @@ async def get_chat_messages_api(request:Request,req:GetChatMessages,x_signature:
     try:
         return get_chat_messages(req.username,req.chat_id)
     except Exception as e:
+        print(f"Error : {e}")
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
  
     

@@ -56,7 +56,7 @@ def create_chat(username:str) -> bool:
     if not is_user_exists(username):
         return False
     chat_data = {
-        "id":str(uuid.uuid4),
+        "id":str(uuid.uuid4()),
         "messages":[]
     }
     with sync_engine.connect() as conn:
@@ -93,13 +93,13 @@ def send_message(username:str,chat_id:str,role:str,message:str,files:Optional[Li
     ind = False
     with sync_engine.connect() as conn:
         try:
-            user_chats = get_user_chats()
+            user_chats = get_user_chats(username)
             for chat in user_chats:
                 if chat["id"] == chat_id:
                     chat["messages"].append({
                         "role":role,
                         "message":message,
-                        "id":str(uuid.uuid4),
+                        "id":str(uuid.uuid4()),
                         "files":files if files is not None else [] 
                     })
                     ind = True
@@ -133,7 +133,7 @@ def get_chat_messages(username:str,chat_id:str) -> List:
         raise KeyError("User not found")
     with sync_engine.connect() as conn:
         try:
-            chats = get_user_chats()
+            chats = get_user_chats(username)
             for chat in chats:
                 if chat["id"] == chat_id:
                     return chat["messages"]

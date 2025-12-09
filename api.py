@@ -15,7 +15,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from database.core import register_new_user,login,create_chat,get_user_chats,send_message,delete_chat,get_chat_messages
+from database.core import register_new_user,login,create_chat,get_user_chats,send_message,delete_chat,get_chat_messages,get_user_all_messages
 from olama import OllamaAPI
 
 
@@ -172,6 +172,7 @@ async def get_user_chats_api(request:Request,username:str):
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
+
 class SendMessage(BaseModel):
     username:str
     chat_id:str
@@ -184,9 +185,11 @@ async def send_message_api(request:Request,req:SendMessage,x_signature:str = Hea
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         send_message(req.username,req.chat_id,"user",req.message,req.files)
+        chat_messages = get_user_all_messages(req.username)
+        chat_messages_str = " ".join(chat_messages)
         olama = OllamaAPI()
         message = [
-            {"role": "system", "content": "Ты умный юрист с  25 летним опытом и разговариваешь с пользователем на том языке на котором он с тобой говорит"},
+            {"role": "system", "content": f"Ты умный юрист с  25 летним опытом и разговариваешь с пользователем на том языке на котором он с тобой говорит.Вот история чатов пользователя что бы ты его лучще понимал : {chat_messages_str}"},
             {"role": "user", "content": req.message}
         ]
         resp = olama.chat(message)
@@ -210,18 +213,6 @@ async def get_chat_messages_api(request:Request,req:GetChatMessages,x_signature:
         print(f"Error : {e}")
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
-class GetAllUserMessages(BaseModel):
-    username:str
-@app.post("/all/messages")
-@limiter.limit("900/minute")
-async def get_all_messages(request:Request,req:GetAllUserMessages,x_signature:str = Header(...),x_timestamp:str = Header(...)):
-    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
-        raise HTTPException(status_code = 401,detail = "Invalid signature")
-    try:
-        pass
-    except Exception as e:
-        raise HTTPException(status_code = 400,detail = f"Error : {e}")
-    
 
 load_dotenv()
    

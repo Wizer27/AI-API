@@ -148,8 +148,12 @@ def get_user_all_messages(username:str) -> Optional[List[str]]:
         try:
             stmt = select(users_table.c.chats).where(users_table.c.username == username)
             res = conn.execute(stmt)
-            data = res.fetchall()
-            return data
+            data = res.fetchone()[0]
+            messages = []
+            for chat in data:
+                for message in chat["messages"]:
+                    messages.append(message["message"])
+            return messages        
         except Exception as e:
             print(f"Error : {e}")
             return []

@@ -6,3 +6,4 @@ env
 env/
 venv
 database/.env
+.env

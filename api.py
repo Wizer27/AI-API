@@ -17,6 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from database.core import register_new_user,login,create_chat,get_user_chats,send_message,delete_chat,get_chat_messages,get_user_all_messages
 from olama import OllamaAPI
+from new_ai import ask_chat_gpt
 
 
 secrets_file = "data/secrets.json"
@@ -187,12 +188,8 @@ async def send_message_api(request:Request,req:SendMessage,x_signature:str = Hea
         send_message(req.username,req.chat_id,"user",req.message,req.files)
         chat_messages = get_user_all_messages(req.username)
         chat_messages_str = " ".join(chat_messages)
-        olama = OllamaAPI()
-        message = [
-            {"role": "system", "content": f"Ты умный юрист с  25 летним опытом и разговариваешь с пользователем на том языке на котором он с тобой говорит.Вот история чатов пользователя что бы ты его лучще понимал : {chat_messages_str}"},
-            {"role": "user", "content": req.message}
-        ]
-        resp = olama.chat(message)
+        promt = f"Ты умный юрист с  25 летним опытом и разговариваешь с пользователем на том языке на котором он с тобой говорит.Вот история чатов пользователя что бы ты его лучще понимал : {chat_messages_str}"
+        resp = await ask_chat_gpt(promt)
         send_message(req.username,req.chat_id,"assistant",resp,[])
         return resp
 

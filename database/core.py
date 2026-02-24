@@ -164,5 +164,5 @@ def debug():
     print(login("us","1")) 
 
 
-
+print(create_tables())
      

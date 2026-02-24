@@ -10,7 +10,7 @@ from typing import Optional, List
 from datetime import datetime
 
 API_URL = "http://0.0.0.0:8080"
-json_path_secrets = "/Users/ivan/AI-API/data/secrets.json"
+json_path_secrets = "/Users/ivanvinogradov/AI-API/data/secrets.json"
 
 # ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 
